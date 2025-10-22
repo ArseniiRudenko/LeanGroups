@@ -1,0 +1,26 @@
+{
+    "name": "solarsuit/lean_groups",
+    "description": "Adds groups.",
+    "version": "0.1",
+    "homepage": "https://github.com/ArseniiRudenko/LeanGroups",
+    "screenshot": "/images/screenshot.png",
+    "authors": [
+        {
+            "name": "Arsenii Rudenko",
+            "email": "arsenii@solarsuit.games"
+        }
+    ],
+    "type": "plugin",
+    "keywords": [
+        "Groups"
+    ],
+    "license": "Apache-2.0",
+    "require": {
+        "leantime/leantime": "3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Leantime\\Plugins\\LeanGroups\\": "/"
+        }
+    }
+}
