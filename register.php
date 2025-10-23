@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
-use Leantime\Core\Events\EventDispatcher;
-use Leantime\Plugins\AuditTrail\Controllers\UiController;
+
+// Register view namespace for LeanGroups plugin
+View::addNamespace('LeanGroups', base_path('app/Plugins/LeanGroups/Templates'));
 
 

@@ -8,7 +8,7 @@ Adds group field to Todos and filter by group.
 
 ### Plugin Installation
 1. Copy the plugin into the Plugins/ folder 
-5. The new plugin should show up already nad be available to install and enable
+2. The new plugin should show up already nad be available to install and enable
 
 
 ### Language Assets
