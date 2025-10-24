@@ -23,7 +23,7 @@ class LeanGroupsRepository{
                 name VARCHAR(255) NOT NULL,
                 description TEXT,
                 client_id INT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT UTC_TIMESTAMP
             );
         ";
 
@@ -32,9 +32,9 @@ class LeanGroupsRepository{
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 group_id INT NOT NULL,
                 user_id INT NOT NULL,
-                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (group_id) REFERENCES lean_groups(id),
-                FOREIGN KEY (user_id) REFERENCES zp_user(id)
+                joined_at TIMESTAMP DEFAULT UTC_TIMESTAMP,
+                FOREIGN KEY (group_id) REFERENCES lean_groups(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES zp_user(id) ON DELETE CASCADE
             );
         ";
 
@@ -44,27 +44,28 @@ class LeanGroupsRepository{
                 project_id INT NOT NULL,
                 group_id INT NOT NULL,
                 role VARCHAR(50),
-                FOREIGN KEY (group_id) REFERENCES lean_groups(id),
-                FOREIGN KEY (project_id) REFERENCES zp_projects(id)
+                FOREIGN KEY (group_id) REFERENCES lean_groups(id) ON DELETE CASCADE,
+                FOREIGN KEY (project_id) REFERENCES zp_projects(id) ON DELETE CASCADE
             )
         ";
         //IF NOT EXISTS for column is a supported construction in mariadb, the IDE is wrong, do not remove!
         $sql4= 'ALTER TABLE zp_tickets ADD COLUMN IF NOT EXISTS group_id INT NULL';
+        $sql5 = 'alter table zp_tickets add constraint fk_group_id_lean_groups_id foreign key (group_id) references lean_groups(id) on delete set null';
 
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $pdo->exec($sql1);
         $pdo->exec($sql2);
         $pdo->exec($sql3);
         $pdo->exec($sql4);
+        $pdo->exec($sql5);
     }
 
     public function teardown():void{
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $pdo->exec("DROP TABLE IF EXISTS lean_groups");
         $pdo->exec("DROP TABLE IF EXISTS lean_group_members");
         $pdo->exec("DROP TABLE IF EXISTS lean_group_project_membership");
+        $pdo->exec("alter table zp_tickets drop constraint fk_group_id_lean_groups_id");
         $pdo->exec("alter table zp_tickets drop column group_id;");
     }
 
@@ -89,16 +90,14 @@ class LeanGroupsRepository{
             ) pm ON pm.group_id = g.id
             ORDER BY g.name ASC
         ";
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
     public function createGroup(string $name, ?string $description = null, ?int $clientId = null): int {
         $sql = "INSERT INTO lean_groups (name, description, client_id) VALUES (:name, :description, :client_id)";
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':name', $name, PDO::PARAM_STR);
         $stmt->bindValue(':description', $description, $description === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
@@ -108,8 +107,7 @@ class LeanGroupsRepository{
     }
 
     public function deleteGroup(int $groupId): void {
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $pdo->beginTransaction();
         $stmt = $pdo->prepare("DELETE FROM lean_group_members WHERE group_id = :gid");
         $stmt->bindValue(':gid', $groupId, PDO::PARAM_INT);
@@ -127,8 +125,7 @@ class LeanGroupsRepository{
     }
 
     public function getGroup(int $groupId): ?array {
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $stmt = $pdo->prepare("SELECT * FROM lean_groups WHERE id = :id");
         $stmt->bindValue(':id', $groupId, PDO::PARAM_INT);
         $stmt->execute();
@@ -144,8 +141,7 @@ class LeanGroupsRepository{
         if (array_key_exists('client_id', $data)) { $fields[] = 'client_id = :client_id'; $params['client_id'] = $data['client_id']; }
         if (!$fields) { return; }
         $sql = 'UPDATE lean_groups SET ' . implode(', ', $fields) . ' WHERE id = :id';
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $call =$pdo->prepare($sql);
         foreach ($params as $key => $value) {
             $call->bindValue(':' . $key, $value);
@@ -161,8 +157,7 @@ class LeanGroupsRepository{
             WHERE gm.group_id = :gid
             ORDER BY u.firstname ASC
         ";
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':gid', $groupId, PDO::PARAM_INT);
         $stmt->execute();
@@ -170,8 +165,7 @@ class LeanGroupsRepository{
     }
 
     public function addMember(int $groupId, int $userId): void {
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $call = $pdo->prepare("INSERT INTO lean_group_members (group_id, user_id) VALUES (:gid, :uid)");
         $call->bindValue(':gid', $groupId, PDO::PARAM_INT);
         $call->bindValue(':uid', $userId, PDO::PARAM_INT);
@@ -179,8 +173,7 @@ class LeanGroupsRepository{
     }
 
     public function removeMember(int $groupId, int $userId): void {
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $call = $pdo->prepare("DELETE FROM lean_group_members WHERE group_id = :gid AND user_id = :uid");
         $call->bindValue(':gid', $groupId, PDO::PARAM_INT);
         $call->bindValue(':uid', $userId, PDO::PARAM_INT);
@@ -188,8 +181,7 @@ class LeanGroupsRepository{
     }
 
     public function setGroupRoleForProject(int $groupId, int $projectId, ?int $roleKey): void {
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         // Upsert-like behavior: delete if role null, otherwise insert/update
         if ($roleKey === null) {
             $call = $pdo->prepare("DELETE FROM lean_group_project_membership WHERE group_id = :gid AND project_id = :pid");
@@ -222,8 +214,7 @@ class LeanGroupsRepository{
             WHERE pm.group_id = :gid
             ORDER BY p.name ASC
         ";
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':gid', $groupId, PDO::PARAM_INT);
         $stmt->execute();
@@ -231,8 +222,7 @@ class LeanGroupsRepository{
     }
 
     public function addProjectToGroup(int $groupId, int $projectId): void {
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $sql = "INSERT INTO lean_group_project_membership (group_id, project_id, role)
                 SELECT :gid, :pid, NULL FROM DUAL
                 WHERE NOT EXISTS (
@@ -247,8 +237,7 @@ class LeanGroupsRepository{
     }
 
     public function removeProjectFromGroup(int $groupId, int $projectId): void {
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $call = $pdo->prepare("DELETE FROM lean_group_project_membership WHERE group_id = :gid AND project_id = :pid");
         $call->bindValue(':gid', $groupId, PDO::PARAM_INT);
         $call->bindValue(':pid', $projectId, PDO::PARAM_INT);
@@ -265,8 +254,7 @@ class LeanGroupsRepository{
             FROM zp_user u
             ORDER BY u.firstname ASC, u.lastname ASC
         ";
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $stmt = $pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
@@ -286,8 +274,7 @@ class LeanGroupsRepository{
             )
             ORDER BY u.firstname ASC, u.lastname ASC
         ";
-        $conn = $this->db->getConnection();
-        $pdo = $conn->getPdo();
+        $pdo = $this->db->pdo();
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':gid', $groupId, PDO::PARAM_INT);
         $stmt->execute();
