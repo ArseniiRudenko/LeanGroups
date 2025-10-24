@@ -43,7 +43,7 @@ class LeanGroupsRepository{
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 project_id INT NOT NULL,
                 group_id INT NOT NULL,
-                role VARCHAR(50),
+                role INT,
                 FOREIGN KEY (group_id) REFERENCES lean_groups(id) ON DELETE CASCADE,
                 FOREIGN KEY (project_id) REFERENCES zp_projects(id) ON DELETE CASCADE
             )
@@ -280,4 +280,100 @@ class LeanGroupsRepository{
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
+
+    public function getProjectForUser(int $userId,string $projectStatus,string $accessStatus, int|string $clientId): array
+    {
+        $query = "
+           SELECT
+					project.id,
+					project.name,
+					project.details,
+					project.clientId,
+					project.state,
+					project.hourBudget,
+					project.dollarBudget,
+				    project.menuType,
+				    project.type,
+				    project.parent,
+				    project.modified,
+				    project.start,
+				    project.end,
+					client.name AS clientName,
+					client.id AS clientId,
+					parent.id AS parentId,
+					parent.name as parentName,
+					IF(favorite.id IS NULL, false, true) as isFavorite
+					FROM zp_projects as project
+                    LEFT JOIN zp_projects as parent ON parent.id = project.parent
+                    LEFT JOIN zp_reactions as favorite ON project.id = favorite.moduleId
+				                                          AND favorite.module = 'project'
+				                                          AND favorite.reaction = 'favorite'
+				                                          AND favorite.userId = :id
+                    LEFT JOIN zp_clients as client ON project.clientId = client.id
+					join lean_group_members as group_member on group_member.user_id = :id
+					join leantime.lean_groups lg on group_member.group_id = lg.id
+                    left join lean_group_project_membership as membership on membership.project_id = project.id and membership.group_id = group_member.group_id
+           WHERE membership.project_id IS NOT NULL
+        ";
+
+        if ($accessStatus == 'clients' || $accessStatus == 'all') {
+            $query .=" or (project.psettings = 'clients' and lg.client_id = client.id)";
+        }
+
+        if ($projectStatus == 'open') {
+            $query .= " AND (project.state <> '-1' OR project.state IS NULL)";
+        } elseif ($projectStatus == 'closed') {
+            $query .= ' AND (project.state = -1)';
+        }
+
+        if ($clientId != '' && $clientId != null && $clientId > 0) {
+            $query .= ' AND project.clientId = :clientId';
+        }
+
+        $pdo = $this->db->pdo();
+        $stmt = $pdo->prepare($query);
+
+        if ($clientId != '' && $clientId != null && $clientId > 0) {
+            $stmt->bindValue(':clientId', $clientId);
+        }
+
+        $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    public function isUserInProjectViaGroup(int $userId, int $projectId): bool
+    {
+        $sql = "SELECT 1 FROM lean_group_members
+                WHERE user_id = :userId
+                AND group_id IN (
+                  SELECT group_id
+                  FROM lean_group_project_membership
+                  WHERE project_id = :projectId
+                )";
+        $pdo = $this->db->pdo();
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':projectId', $projectId, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchColumn() !== false;
+    }
+
+    public function getUserProjectRoleViaGroup(int $userId, int $projectId)
+    {
+        $sql = "SELECT pm.role FROM lean_group_members gm
+                JOIN lean_group_project_membership pm ON gm.group_id = pm.group_id
+                WHERE gm.user_id = :userId AND pm.project_id = :projectId and pm.role IS NOT NULL
+                ORDER BY pm.role DESC
+                LIMIT 1";
+        $pdo = $this->db->pdo();
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':projectId', $projectId, PDO::PARAM_INT);
+        $stmt->execute();
+        $role = $stmt->fetchColumn();
+        return $role !== false ? $role : null;
+    }
+
+
 }
