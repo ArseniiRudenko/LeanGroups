@@ -2,6 +2,7 @@
 
 namespace Leantime\Plugins\LeanGroups\Controllers;
 
+use Illuminate\Support\Facades\Cache;
 use Leantime\Core\Controller\Controller;
 use Leantime\Plugins\LeanGroups\Repositories\LeanGroupsRepository;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,20 +24,45 @@ class Pill extends Controller {
     }
 
 
-    public function showGroupPill($row): void
+    public function showGroupPillTicket($row): void
     {
         $row['group_id'] = $this->repo->getAssigmentGroup($row['id']);
-        $groups = $this->repo->getGroups();
-        //map groups to group ids
-        $groupsMap = [];
-        foreach ($groups as $group) {
-            $groupsMap[$group['id']] = $group;
-        }
+        $groupsMap = $this->getGroupsMap();
         $payload = [
             'row' => $row,
             'groups' => $groupsMap
         ];
         echo view('LeanGroups::pill', $payload)->render();
+    }
+
+    public function showTableHeader($void):void
+    {
+        echo "<th class='group-col'>".$this->tpl->__('label.group')."</th>";
+    }
+
+    private function getGroupsMap()
+    {
+        return Cache::remember('lean_groups_map', 60, function () {
+            $groups = $this->repo->getGroups();
+            $groupsMap = [];
+            foreach ($groups as $group) {
+                $groupsMap[$group['id']] = $group;
+            }
+            return $groupsMap;
+        });
+    }
+
+
+    public function showTableRow($payload):void
+    {
+        $row = $payload['ticket'];
+        $groupsMap = $this->getGroupsMap();
+
+        $payload =[
+            'row' => $row,
+            'groups' => $groupsMap
+        ];
+        echo view('LeanGroups::tablePill',$payload);
     }
 
 

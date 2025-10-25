@@ -57,7 +57,9 @@ function userProjectRole($result, $params): string{
 }
 
 EventDispatcher::add_event_listener("leantime.domain.tickets.*.afterDatesSection",[GroupMembership::class, 'showGroupInTicket']);
-EventDispatcher::add_event_listener("leantime.domain.tickets.*.afterTicketPills",[Pill::class, 'showGroupPill']);
+EventDispatcher::add_event_listener("leantime.domain.tickets.*.afterTicketPills",[Pill::class, 'showGroupPillTicket']);
+EventDispatcher::add_event_listener('leantime.domain.tickets.*.allTicketsTable.addHeader',[Pill::class,'showTableHeader']);
+EventDispatcher::add_event_listener('leantime.domain.tickets.*.allTicketsTable.beforeRowEnd',[Pill::class,'showTableRow']);
 
 EventDispatcher::add_filter_listener('leantime.domain.tickets.*.ticket_group_by_field_options', 'groupByOptions');
 EventDispatcher::add_filter_listener('leantime.domain.tickets.*.ticketGroupLabel','labelGroups');
@@ -90,6 +92,10 @@ function labelGroups($group, $params): array
     }
     return $group;
 }
+
+
+
+
 
 $reg = new Registration("LeanGroups");
 $reg->registerLanguageFiles();
