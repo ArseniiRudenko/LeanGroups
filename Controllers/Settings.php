@@ -26,7 +26,7 @@ class Settings extends Controller
         return $this->tpl->display('LeanGroups.settings');
     }
 
-    public function post(array $params): void {
+    public function post(array $params): Response {
         // Create a new group
         $req = $this->incomingRequest->request;
         $name = trim((string) $req->get('name', ''));
@@ -36,14 +36,14 @@ class Settings extends Controller
         if ($name !== '') {
             $this->repo->createGroup($name, $description, $clientId);
         }
-        Frontcontroller::redirect(BASE_URL.'/LeanGroups/settings');
+        return Frontcontroller::redirect(BASE_URL.'/LeanGroups/settings');
     }
 
-    public function delete(): void {
+    public function delete(): Response {
         $groupId = isset($_REQUEST['group_id']) ? (int)$_REQUEST['group_id'] : 0;
         if ($groupId > 0) {
             $this->repo->deleteGroup($groupId);
         }
-        Frontcontroller::redirect(BASE_URL.'/LeanGroups/settings');
+        return Frontcontroller::redirect(BASE_URL.'/LeanGroups/settings');
     }
 }

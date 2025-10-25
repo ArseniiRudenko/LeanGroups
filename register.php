@@ -60,6 +60,7 @@ EventDispatcher::add_event_listener("leantime.domain.tickets.*.afterDatesSection
 EventDispatcher::add_event_listener("leantime.domain.tickets.*.afterTicketPills",[Pill::class, 'showGroupPill']);
 
 EventDispatcher::add_filter_listener('leantime.domain.tickets.*.ticket_group_by_field_options', 'groupByOptions');
+EventDispatcher::add_filter_listener('leantime.domain.tickets.*.ticketGroupLabel','labelGroups');
 
 function groupByOptions($options, $params): array{
     $options['group'] =  [
@@ -70,6 +71,24 @@ function groupByOptions($options, $params): array{
         'function' => null,
     ];
     return $options;
+}
+
+function labelGroups($group, $params): array
+{
+    $grouping = $params['grouping'];
+    if ($grouping == 'group_id'){
+        $ticket = $params['ticket'];
+        $repository = new LeanGroupsRepository();
+        $groupId = $ticket['group_id'];
+        if($groupId == null){
+            $groupName = 'Not Assigned';
+        }else {
+            $groupName = $repository->getGroup($groupId)['name'];
+        }
+        $group['label'] = $groupName;
+        $group['id'] = $ticket['group_id'] ?? 0;
+    }
+    return $group;
 }
 
 $reg = new Registration("LeanGroups");
