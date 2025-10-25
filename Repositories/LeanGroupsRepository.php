@@ -74,8 +74,7 @@ class LeanGroupsRepository{
         $sql = "
             SELECT g.id, g.name, g.description, g.client_id,
                    c.name AS client_name,
-                   COALESCE(m.member_count, 0) AS member_count,
-                   pm.role AS role
+                   COALESCE(m.member_count, 0) AS member_count
             FROM lean_groups g
             LEFT JOIN (
                 SELECT group_id, COUNT(*) AS member_count
@@ -83,11 +82,6 @@ class LeanGroupsRepository{
                 GROUP BY group_id
             ) m ON m.group_id = g.id
             LEFT JOIN zp_clients c ON c.id = g.client_id
-            LEFT JOIN (
-                SELECT group_id, MAX(role) AS role
-                FROM lean_group_project_membership
-                GROUP BY group_id
-            ) pm ON pm.group_id = g.id
             ORDER BY g.name ASC
         ";
         $pdo = $this->db->pdo();
@@ -281,7 +275,7 @@ class LeanGroupsRepository{
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    public function getProjectForUser(int $userId,string $projectStatus,string $accessStatus, int|string $clientId): array
+    public function getProjectForUser(int $userId,string $projectStatus,string $accessStatus, int|null|string $clientId): array
     {
         $query = "
            SELECT
@@ -375,5 +369,29 @@ class LeanGroupsRepository{
         return $role !== false ? $role : null;
     }
 
+    public function getAssigmentGroup(int $ticketId)
+    {
+        $sql = "SELECT group_id FROM zp_tickets WHERE id = :id";
+        $pdo = $this->db->pdo();
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':id', $ticketId, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['group_id'] ?? null;
+    }
+
+    public function setTicketGroup($ticketId, $groupId)
+    {
+        $sql = "UPDATE zp_tickets SET group_id = :group_id WHERE id = :id";
+        $pdo = $this->db->pdo();
+        $stmt = $pdo->prepare($sql);
+        if($groupId == 0){
+            $stmt->bindValue(':group_id', null, PDO::PARAM_NULL);
+        }else {
+            $stmt->bindValue(':group_id', $groupId, PDO::PARAM_INT);
+        }
+        $stmt->bindValue(':id', $ticketId, PDO::PARAM_INT);
+        $stmt->execute();
+    }
 
 }

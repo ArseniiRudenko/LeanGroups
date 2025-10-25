@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\View;
 use Leantime\Core\Events\EventDispatcher;
 use Leantime\Domain\Auth\Models\Roles;
+use Leantime\Plugins\LeanGroups\Controllers\GroupMembership;
+use Leantime\Plugins\LeanGroups\Controllers\Pill;
 use Leantime\Plugins\LeanGroups\Repositories\LeanGroupsRepository;
 
 // Register view namespace for LeanGroups plugin
@@ -53,4 +55,5 @@ function userProjectRole($result, $params): string{
     return $result;
 }
 
-
+EventDispatcher::add_event_listener("leantime.domain.tickets.*.afterDatesSection",[GroupMembership::class, 'showGroupInTicket']);
+EventDispatcher::add_event_listener("leantime.domain.tickets.*.afterTicketPills",[Pill::class, 'showGroupPill']);

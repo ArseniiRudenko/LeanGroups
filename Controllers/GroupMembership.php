@@ -2,6 +2,7 @@
 
 namespace Leantime\Plugins\LeanGroups\Controllers;
 
+use Illuminate\Support\Facades\Log;
 use Leantime\Core\Controller\Controller;
 use Leantime\Core\Controller\Frontcontroller;
 use Leantime\Domain\Auth\Models\Roles;
@@ -107,4 +108,14 @@ class GroupMembership extends Controller
         }
         return Frontcontroller::redirect(BASE_URL.'/LeanGroups/groupMembership?group_id='.$groupId);
     }
+
+
+    public function showGroupInTicket($payload)
+    {
+        $ticket = $payload['ticket'];
+        $payload['ticketGroup'] = $this->repo->getAssigmentGroup($ticket->id);
+        $payload['groups'] = $this->repo->getGroups();
+        echo view('LeanGroups::assigmentGroup', $payload)->render();
+    }
+
 }
