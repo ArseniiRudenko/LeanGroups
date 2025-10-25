@@ -22,6 +22,7 @@ class LeanGroupsRepository{
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 description TEXT,
+                color VARCHAR(50) DEFAULT 'var(--grey)',
                 client_id INT,
                 created_at TIMESTAMP DEFAULT UTC_TIMESTAMP
             );
@@ -72,7 +73,7 @@ class LeanGroupsRepository{
     // Fetch all groups with member count and latest role (if any) and client name if available
     public function getGroups(): array {
         $sql = "
-            SELECT g.id, g.name, g.description, g.client_id,
+            SELECT g.id, g.name, g.description,g.color, g.client_id,
                    c.name AS client_name,
                    COALESCE(m.member_count, 0) AS member_count
             FROM lean_groups g
@@ -89,13 +90,15 @@ class LeanGroupsRepository{
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    public function createGroup(string $name, ?string $description = null, ?int $clientId = null): int {
-        $sql = "INSERT INTO lean_groups (name, description, client_id) VALUES (:name, :description, :client_id)";
+    public function createGroup(string $name, ?string $description = null, ?int $clientId = null, $color = 'var(--grey)'): int {
+        $sql = "INSERT INTO lean_groups (name, description,color, client_id) VALUES (:name, :description,:color, :client_id)";
         $pdo = $this->db->pdo();
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':name', $name, PDO::PARAM_STR);
         $stmt->bindValue(':description', $description, $description === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $stmt->bindValue(':client_id', $clientId, $clientId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+
+        $stmt->bindValue(':color', $color, $color === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $stmt->execute();
         return (int)$pdo->lastInsertId();
     }
@@ -133,6 +136,7 @@ class LeanGroupsRepository{
         if (array_key_exists('name', $data)) { $fields[] = 'name = :name'; $params['name'] = $data['name']; }
         if (array_key_exists('description', $data)) { $fields[] = 'description = :description'; $params['description'] = $data['description']; }
         if (array_key_exists('client_id', $data)) { $fields[] = 'client_id = :client_id'; $params['client_id'] = $data['client_id']; }
+        if (array_key_exists('color', $data)) { $fields[] = 'color = :color'; $params['color'] = $data['color']; }
         if (!$fields) { return; }
         $sql = 'UPDATE lean_groups SET ' . implode(', ', $fields) . ' WHERE id = :id';
         $pdo = $this->db->pdo();

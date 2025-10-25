@@ -31,10 +31,11 @@ class Settings extends Controller
         $req = $this->incomingRequest->request;
         $name = trim((string) $req->get('name', ''));
         $description = $req->get('description', null);
+        $color = $req->get('color', null);
         $client = $req->get('client_id', null);
         $clientId = $client !== '' ? (int) $client : null;
         if ($name !== '') {
-            $this->repo->createGroup($name, $description, $clientId);
+            $this->repo->createGroup($name, $description, $clientId, $color);
         }
         return Frontcontroller::redirect(BASE_URL.'/LeanGroups/settings');
     }

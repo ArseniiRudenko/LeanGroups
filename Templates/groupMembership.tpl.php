@@ -1,3 +1,24 @@
+<?php
+$colorMap = [
+    'default'=> 'var(--grey)',
+    'primary'=> 'var(--primary-color)',
+    'red'=> 'var(--red)',
+    'green'=> 'var(--green)',
+    'yellow'=> 'var(--yellow)',
+    'black'=> '#000',
+    "orange" => "#f57c00",
+    "blue" => "#007bff",
+    "pink" => "#e83e8c",
+    "purple" => "#6f42c1",
+    "teal" => "#20c997",
+    "cyan" => "#17a2b8",
+    "gray-dark" => "#343a40"
+];
+
+$inverseColorMap = array_flip($colorMap);
+
+?>
+
 <div class="pageheader">
     <div class="pageicon"><span class="fa fa-user-group"></span></div>
     <div class="pagetitle">
@@ -5,6 +26,33 @@
         <small>Manage memberships and group details</small>
     </div>
 </div>
+
+<script>
+    function isColorDark(color, element = document.body) {
+        let resolvedColor = color;
+
+        // --- 1️⃣ Resolve CSS variable ---
+        if (color.startsWith('var(')) {
+            const varName = color.slice(4, -1).trim();
+            resolvedColor = getComputedStyle(element).getPropertyValue(varName).trim();
+        }
+
+        // --- 2️⃣ Create a temporary element to resolve any CSS color value ---
+        const div = document.createElement('div');
+        div.style.color = resolvedColor;
+        document.body.appendChild(div);
+        const computed = getComputedStyle(div).color;
+        document.body.removeChild(div);
+
+        // computed is always like "rgb(r, g, b)"
+        const [r, g, b] = computed.match(/\d+/g).map(Number);
+
+        // --- 3️⃣ Compute luminance ---
+        const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+        return luminance < 128;
+    }
+</script>
 
 <div class="maincontent">
     <div class="maincontentinner">
@@ -209,7 +257,32 @@
                                         </select>
                                     </div>
                                 </div>
-                                    <button class="btn btn-success"><i class="fa fa-save"></i> Save Changes</button>
+                                <div class="control-group">
+                                    <label class="control-label" for="lg_color">Color</label>
+                                    <div class="controls">
+                                        <select id="lg_color" name="color" class="input-xlarge">
+                                            <?php foreach ($colorMap as $c => $v ) { ?>
+                                                <option value="<?= $v ?>" <?= $v === $group['color'] ? 'selected' : '' ?>><?= ucfirst($c) ?></option>
+                                            <?php } ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                    <script>
+                                        (function(){
+                                        var sel = document.getElementById('lg_color');
+                                        if(!sel) return;
+                                        function apply(){
+                                        sel.style.backgroundColor = sel.value;
+                                        // Improve readability for very light backgrounds
+                                        sel.style.color = isColorDark(sel.value) ? '#fff': '#000';
+                                    }
+                                        sel.addEventListener('change', apply);
+                                        if (document.readyState === 'loading') {
+                                        document.addEventListener('DOMContentLoaded', apply);
+                                    } else { apply(); }
+                                    })();
+                                </script>
+                                <button class="btn btn-success"><i class="fa fa-save"></i> Save Changes</button>
                             </form>
                             <div style="margin-top: 20px">
                                 <a class="btn" href="<?= BASE_URL ?>/LeanGroups/settings"><span class="fa fa-arrow-left"></span></a>

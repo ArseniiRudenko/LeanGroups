@@ -84,6 +84,7 @@ class GroupMembership extends Controller
                 $data = [];
                 if ($req->has('name')) { $data['name'] = trim((string) $req->get('name')); }
                 if ($req->has('description')) { $data['description'] = $req->get('description'); }
+                if ($req->has('color')) { $data['color'] = $req->get('color'); }
                 if ($req->has('client_id')) {
                     $clientId = $req->get('client_id');
                     $data['client_id'] = $clientId !== '' ? (int) $clientId : null;
