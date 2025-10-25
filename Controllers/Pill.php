@@ -20,7 +20,6 @@ class Pill extends Controller {
         $groupName = $params['group_name'];
         $this->repo->setTicketGroup($ticketId, $groupId);
         return new Response($groupName, 200, ['Content-Type' => 'text/html']);
-
     }
 
 

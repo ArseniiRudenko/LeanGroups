@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\View;
 use Leantime\Core\Events\EventDispatcher;
 use Leantime\Domain\Auth\Models\Roles;
+use Leantime\Domain\Plugins\Services\Registration;
 use Leantime\Plugins\LeanGroups\Controllers\GroupMembership;
 use Leantime\Plugins\LeanGroups\Controllers\Pill;
 use Leantime\Plugins\LeanGroups\Repositories\LeanGroupsRepository;
@@ -57,3 +58,19 @@ function userProjectRole($result, $params): string{
 
 EventDispatcher::add_event_listener("leantime.domain.tickets.*.afterDatesSection",[GroupMembership::class, 'showGroupInTicket']);
 EventDispatcher::add_event_listener("leantime.domain.tickets.*.afterTicketPills",[Pill::class, 'showGroupPill']);
+
+EventDispatcher::add_filter_listener('leantime.domain.tickets.*.ticket_group_by_field_options', 'groupByOptions');
+
+function groupByOptions($options, $params): array{
+    $options['group'] =  [
+        'id' => 'group',
+        'field' => 'group_id',
+        'label' => 'group',
+        'class' => '',
+        'function' => null,
+    ];
+    return $options;
+}
+
+$reg = new Registration("LeanGroups");
+$reg->registerLanguageFiles();
