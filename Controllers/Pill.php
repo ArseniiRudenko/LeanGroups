@@ -15,12 +15,20 @@ class Pill extends Controller {
         $this->repo = $repository;
     }
 
-    public function post($params): Response{
+    public function post($params): Response
+    {
         $ticketId = $params['ticket_id'];
         $groupId = $params['group_id'];
         $groupName = $params['group_name'];
+        $color = $params['color'] ?? 'var(--grey)';
         $this->repo->setTicketGroup($ticketId, $groupId);
-        return new Response($groupName, 200, ['Content-Type' => 'text/html']);
+        $payload = [
+            'ticketId' => $ticketId,
+            'groupId' => $groupId,
+            'groupName' => $groupName,
+            'color' => $color
+        ];
+        return new Response(view('LeanGroups::pill', $payload)->render(), 200, ['Content-Type' => 'text/html']);
     }
 
 
@@ -32,7 +40,7 @@ class Pill extends Controller {
             'row' => $row,
             'groups' => $groupsMap
         ];
-        echo view('LeanGroups::pill', $payload)->render();
+        echo view('LeanGroups::ticketPill', $payload)->render();
     }
 
     public function showTableHeader($void):void
