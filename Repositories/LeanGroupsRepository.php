@@ -373,8 +373,11 @@ class LeanGroupsRepository{
         return $role !== false ? $role : null;
     }
 
-    public function getAssigmentGroup(int $ticketId)
+    public function getAssigmentGroup(int|null|string $ticketId)
     {
+        if($ticketId == null || $ticketId == '' || $ticketId == 0)
+            return null;
+        $ticketId = (int)$ticketId;
         $sql = "SELECT group_id FROM zp_tickets WHERE id = :id";
         $pdo = $this->db->pdo();
         $stmt = $pdo->prepare($sql);
