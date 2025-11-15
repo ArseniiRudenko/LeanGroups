@@ -24,7 +24,6 @@
             } else { apply(); }
         })();
     </script>
-    <?php if ($row['group_id'] != null){ ?>
 
     <ul class="dropdown-menu" aria-labelledby="groupDropdownMenuLink<?= $row['id']?>">
         <li class="nav-header border">Select group</li>
@@ -36,7 +35,5 @@
             echo "<a  hx-swap='outerHTML' hx-target='#groupDropdownMenuLink".$row['id']."' hx-post='/LeanGroups/pill?ticket_id=".$row['id']."&group_id=".$groupId."&group_name=".$group['name']."&color=".urlencode($group['color'])."' >" . $group['name'] . "</a>";
             echo '</li>';
         } ?>
-     <?php }  ?>
-
     </ul>
 </div>
